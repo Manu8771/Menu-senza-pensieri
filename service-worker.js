@@ -1,4 +1,4 @@
-const CACHE_NAME = "menu-senza-pensieri-v3";
+const CACHE_NAME = "menu-senza-pensieri-v4";
 const APP_FILES = [
   "./",
   "./index.html",
