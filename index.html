@@ -1360,4 +1360,39 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
 })();
 </script>
 
+<style id="msp-fix-layout-print">
+.msp-home{grid-template-columns:minmax(0,1fr)!important}.msp-home>*{min-width:0}
+#mspPrintWeek{display:none}
+@media print{
+ body.msp-print-week .msp-shell,body.msp-print-week>main{display:none!important}
+ body.msp-print-week #mspPrintWeek{display:block!important;font-family:Arial,sans-serif;color:#222}
+ #mspPrintWeek h2{font-size:15pt;margin:0 0 6px;color:#2d5f14}
+ #mspPrintWeek .mpw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+ #mspPrintWeek .mpw-day{border:1px solid #999;border-radius:6px;padding:5px 7px;break-inside:avoid}
+ #mspPrintWeek .mpw-day h3{font-size:10.5pt;margin:0 0 3px;color:#2d5f14;border-bottom:1px solid #ccc}
+ #mspPrintWeek .mpw-meal{margin-bottom:4px;font-size:8.2pt;line-height:1.25}#mspPrintWeek .mpw-meal>b{font-size:8.6pt;color:#8a3b00}
+ #mspPrintWeek i{font-style:normal;font-weight:700;color:#666;font-size:6.8pt;text-transform:uppercase;margin-right:3px}
+ #mspPrintWeek .mpw-foot{margin-top:6px;font-size:7pt;color:#777;text-align:right}
+ body.msp-print-week #mspPrintWeek{box-sizing:border-box;padding:0 5mm 0 0}
+}
+</style><div id="mspPrintWeek"></div><script id="msp-fix-print-week">
+(()=>{
+ const NAMES=["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
+ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+ const nm=id=>{const r=(state.recipes||[]).find(x=>x.id===id);if(!r)return"—";let t="";try{t=methodForRecipe(r)==="B"?"B · ":"T · ";}catch(e){}return t+esc(r.name);};
+ function build(){
+  const host=document.getElementById("mspPrintWeek");if(!host||typeof state==="undefined"||!Array.isArray(state.menu))return;
+  const sides=state.menu.slice(28).some(Boolean);let h='<h2>Menù della settimana</h2><div class="mpw-grid">';
+  for(let d=0;d<7;d++){const b=d*4;h+='<div class="mpw-day"><h3>'+NAMES[d]+'</h3>';
+   [["Pranzo",b,28+d*2],["Cena",b+2,29+d*2]].forEach(([lab,s,c])=>{h+='<div class="mpw-meal"><b>'+lab+'</b><div><i>Primo</i>'+nm(state.menu[s])+'</div><div><i>Secondo</i>'+nm(state.menu[s+1])+'</div>'+(sides?'<div><i>Contorno</i>'+nm(state.menu[c])+'</div>':'')+'</div>';});
+   h+='</div>';}
+  const lp=document.getElementById("licPrint");h+='</div><div class="mpw-foot">'+esc(lp?lp.textContent:"")+'</div>';host.innerHTML=h;
+ }
+ function sync(){const day=document.getElementById("mspDay");document.body.classList.toggle("msp-print-week",!!(day&&day.classList.contains("active")));build();}
+ window.addEventListener("beforeprint",sync);
+ const day=document.getElementById("mspDay");if(day)new MutationObserver(sync).observe(day,{attributes:true,attributeFilter:["class"]});
+ const w=document.getElementById("week");if(w)new MutationObserver(sync).observe(w,{childList:true,subtree:true});
+ sync();
+})();
+</script>
 </body></html>
