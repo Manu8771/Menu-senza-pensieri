@@ -76,6 +76,55 @@ main{max-width:none;margin:0;padding:0}
 @media print{.day-recipes,#genmsg,#people,#methodPref,label[for=people],label[for=methodPref]{display:none!important}.course{font-size:6.5pt!important;margin:3px 0 0!important}.meal{margin-bottom:3px!important}.meal>label{font-size:8pt!important}.day{padding:6px 8px!important;break-inside:avoid}.day h3{font-size:10pt!important;margin:0 0 2px!important}select{border:0!important;background:none!important;box-shadow:none!important;-webkit-appearance:none!important;appearance:none!important;padding:0!important;min-height:0!important;height:auto!important;font-size:8.5pt!important;color:#222!important}}
 @media print{#week{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:6px!important}}
 @media print{#sidesPref,label[for=sidesPref]{display:none!important}}
+
+/* === Nuova veste grafica: Menù senza pensieri === */
+:root{--teal:#159f91;--green:#277c66;--cream:#fffaf1;--line:#f1dfca;--ink:#343b38;--muted:#727b76;--coral:#f36f52;--purple:#7460a8}
+body{background:linear-gradient(180deg,#fff5e9 0,#fffaf4 340px,#f8faf7 100%);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{isolation:isolate;overflow:hidden;position:relative;min-height:178px;padding:28px 230px 25px 112px!important;border-radius:0 0 34px 34px;background:linear-gradient(112deg,#f16e50 0%,#f59d51 48%,#27aa98 100%);box-shadow:0 10px 28px #a65b3730;text-shadow:none}
+header:after{content:"🍅   🍎   🫑\A  🍢   🍴";white-space:pre;position:absolute;z-index:-1;right:24px;top:16px;width:205px;height:145px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:2.55rem;line-height:1.65;letter-spacing:5px;transform:rotate(-5deg);filter:drop-shadow(0 7px 5px #693b3230)}
+header .logo{left:22px;top:28px;width:74px;height:74px;border-radius:20px;box-shadow:0 5px 14px #5c302b35;background:#fff}
+header h1{font-size:clamp(1.65rem,3vw,2.35rem);line-height:1.08;letter-spacing:-.045em;color:#fff;font-weight:850}
+header p{color:#fff!important;font-size:.96rem;margin-top:9px;max-width:440px}
+#licBtn{margin-top:12px!important;background:#fff!important;color:#694b42!important;border:0!important;box-shadow:0 3px 0 #9b5945!important}
+main{max-width:1120px;padding:22px 18px 40px}
+.tabs{gap:10px;margin:18px 0 20px;scrollbar-width:thin}
+.tab{padding:11px 18px;background:#fff!important;color:#52625b!important;border:1px solid #e8e6dc!important;box-shadow:0 3px 10px #344b3910!important}
+.tab.active{background:#287f68!important;color:#fff!important;border-color:#287f68!important;box-shadow:0 4px 0 #1d604e!important}
+.panel{border:1px solid #eee2d3;border-radius:24px;background:#fff;box-shadow:0 8px 24px #59462a0c;padding:22px;margin-bottom:18px}
+h2{color:#315e50;font-size:1.3rem;letter-spacing:-.025em}
+h3{color:#3c5148}
+.grid{gap:14px}
+#menu>.panel .grid>div{background:#fffaf3;border:1px solid #f1e5d5;border-radius:16px;padding:10px 12px 12px}
+label{color:#4b5b53;font-size:.86rem}
+input,select,textarea{border:1px solid #e7ded2;border-radius:12px;background:#fff;color:#34423b;padding:11px 12px;min-height:44px}
+input:focus,select:focus,textarea:focus{outline:3px solid #159f9125;border-color:#159f91}
+button,.btn{border-radius:13px;background:#ed7255;box-shadow:0 3px 0 #c95b43;padding:11px 16px;transition:filter .15s,transform .15s}
+button:hover{filter:brightness(1.04)}button:active{transform:translateY(2px);box-shadow:0 1px 0 #c95b43}
+button.secondary{background:#f0f5f0;color:#376c58;border:1px solid #dce9df;box-shadow:none}
+button.danger{background:#fff0e9;color:#a34b2c;box-shadow:none}
+.actions{gap:10px;margin-top:16px}
+#week{gap:14px}
+.day{background:#fff!important;border:1px solid #e9e3d9!important;border-radius:19px;padding:15px;box-shadow:0 5px 16px #4c59440c;transition:box-shadow .15s,border-color .15s}
+.day:hover{transform:none!important;box-shadow:0 7px 20px #4c594418}
+.weekgrid .day:nth-child(7n+1){border-top:4px solid #f17a60!important}.weekgrid .day:nth-child(7n+2){border-top:4px solid #eab34e!important}
+.weekgrid .day:nth-child(7n+3){border-top:4px solid #56b89b!important}.weekgrid .day:nth-child(7n+4){border-top:4px solid #7d9fce!important}
+.weekgrid .day:nth-child(7n+5){border-top:4px solid #a28bc5!important}.weekgrid .day:nth-child(7n+6){border-top:4px solid #d78eae!important}
+.weekgrid .day:nth-child(7n+7){border-top:4px solid #8dbb70!important}
+.course{color:#347b67}
+.meal{background:#fbfaf6;border:1px solid #f0ece4;border-radius:13px;padding:10px;margin:10px 0}
+.meal select{background:#fff}
+.recipe{border:1px solid #ece5d9;border-radius:15px;background:#fffdf9}
+.pill{background:#fff0d6;color:#8a5c21}
+.hint{background:#f4f8f2;border:1px solid #dce9df;color:#486a56}
+.method-legend{background:#f8faf6;border-radius:12px;padding:9px 12px}
+#shopping{padding-left:0;list-style:none}
+#shopping li{border-bottom:1px solid #eee9df;padding:9px 4px}
+dialog{border-radius:22px!important;box-shadow:0 18px 60px #24392c30!important}
+dialog::backdrop{background:#26352e77;backdrop-filter:blur(3px)}
+@media(max-width:700px){header{min-height:155px;padding:22px 18px 20px 100px!important}header .logo{left:14px;top:22px;width:70px;height:70px}header:after{right:5px;top:88px;width:150px;height:60px;font-size:1.35rem;letter-spacing:1px;line-height:1.2}header p{max-width:100%;padding-right:8px}main{padding:14px 11px 30px}.panel{padding:16px;border-radius:20px}.tabs{margin-top:14px}.grid,.weekgrid{grid-template-columns:1fr}.actions button{flex:1 1 calc(50% - 8px)}#menu>.panel .grid>div{padding:8px 10px 10px}}
+@media(max-width:380px){header{padding-left:88px!important}header h1{font-size:1.42rem}header p{font-size:.78rem}header:after{font-size:1.15rem;width:125px}}
+@media print{header:after{display:none!important}.day:hover{transform:none!important}}
+
 </style>
 </head>
 <body>
@@ -94,7 +143,7 @@ main{max-width:none;margin:0;padding:0}
 <div><label for="people">Numero di persone</label><select id="people"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label for="methodPref">Come vuoi cucinare?</label><select id="methodPref"><option value="">Bimby e tradizionale</option><option value="B">Solo Bimby</option><option value="T">Solo tradizionale</option></select></div><div><label for="sidesPref">Includi i contorni</label><select id="sidesPref"><option value="0">No</option><option value="1">Sì</option></select></div>
 
 </div>
-<div class="actions no-print"><button id="generate">🎲 Genera menu</button><button class="secondary" id="saveMenu">💾 Salva tabella</button><button class="secondary" id="clearMenu">🧹 Svuota tabella</button><button class="secondary" onclick="if(!needLic())window.print()">🖨️ Stampa menu</button></div>
+<div class="actions no-print"><button id="generate">🎲 Genera menu</button><button class="secondary" id="saveMenu">💾 Salva settimana</button><button class="secondary" id="clearMenu">🧹 Svuota settimana</button><button class="secondary" onclick="if(!needLic())window.print()">🖨️ Stampa menu</button></div>
 <p class="muted" id="genmsg"></p>
 </div>
 <div id="week" class="weekgrid"></div>
