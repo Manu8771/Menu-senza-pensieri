@@ -1225,7 +1225,7 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
       const row=(label,slot,type)=>{
         const current=state.recipes.find(r=>r.id===state.menu[slot]);
         const display=current?`${methodBadgeHTML(current,true)} ${esc(current.name)}`:(state.menu[slot]==='free'?'Pasto libero':'Nessun piatto selezionato');
-        const chooser=licensed?`<select data-slot="${slot}">${mealOptions(state.menu[slot]||'',type)}</select>`:`<div class="msp-free-dish">${display}</div>`;
+        const chooser=licensed?`<select data-slot="${slot}">${mealOptions(state.menu[slot]||'',type)}</select>`:`<button type="button" class="msp-free-dish msp-free-chooser" data-slot="${slot}" aria-label="Scelta manuale ricetta, funzione a pagamento"><span>${display}</span><span class="msp-free-chevron" aria-hidden="true">⌄</span></button>`;
         return `<div class="msp-course-row"><b>${label}</b><div>${chooser}<button type="button" class="secondary swap" data-slot="${slot}">↻ Cambia</button></div></div>`;
       };
       return `<section class="msp-meal-card ${kind}"><div class="msp-meal-title">${title}</div><div class="msp-meal-content"><div class="msp-courses">${row('Primo',firstSlot,'Primo')}${row('Secondo',firstSlot+1,'Secondo')}${includeSides?row('Contorno',sideSlot,'Contorno'):''}</div></div></section>`;
@@ -1282,6 +1282,81 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
   const menuPanel=document.querySelector('#menu .panel');
   if(menuPanel){const grid=menuPanel.querySelector('.grid');const labels=grid?[...grid.querySelectorAll('label')]:[];const fields=el('mspConfig')?.querySelectorAll('.msp-field')||[];if(labels.length>=3&&fields.length>=3){fields[0].appendChild(labels[0].parentElement);fields[1].appendChild(labels[1].parentElement);fields[2].appendChild(labels[2].parentElement);}}
   render();
+})();
+</script>
+
+
+<style id="msp-free-feature-guards">
+  /* Nella versione gratuita la pagina della lista non deve essere raggiungibile. */
+  body.msp-free-mode #spesa { display:none !important; }
+</style>
+<style id="msp-free-chooser-style">
+.msp-free-chooser{width:100%;border:1px solid #dfc7a8;background:#fffaf0;border-radius:12px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;font:inherit}
+.msp-free-chooser .msp-free-chevron{font-size:22px;font-weight:900;color:#70401f;flex:0 0 auto;padding:0 7px}
+</style>
+<script id="msp-free-feature-guards-js">
+(() => {
+  const paid = () => {
+    try { return typeof getLic === 'function' && !!getLic(); }
+    catch (_) { return false; }
+  };
+  const paywall = (feature) => {
+    alert(`${feature} è una funzione disponibile dopo l'acquisto della versione completa. Attiva la licenza per utilizzarla.`);
+    if (typeof needLic === 'function') needLic();
+  };
+
+  const refreshMode = () => {
+    document.body.classList.toggle('msp-free-mode', !paid());
+  };
+  refreshMode();
+
+  // Blocca le funzioni premium prima che i gestori originali possano aprirle.
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    if (!target) return;
+
+    const shoppingButton = target.closest('#mspShopping, [data-tab="spesa"]');
+    if (shoppingButton && !paid()) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      paywall('La lista della spesa');
+      return;
+    }
+
+    const manualChooser = target.closest('#week button.msp-free-chooser[data-slot]');
+    if (manualChooser && !paid()) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      paywall('La scelta manuale delle ricette dall’archivio');
+      return;
+    }
+
+    const printButton = target.closest('#mspPrint, #printMenu, [data-action="print-menu"]');
+    if (printButton && !paid()) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      paywall('La stampa del menù');
+      return;
+    }
+
+    // Anche l'eventuale pulsante di stampa interno alla vecchia vista resta protetto.
+    const legacyPrint = target.closest('#menu button[onclick*="window.print"], #spesa button[onclick*="window.print"]');
+    if (legacyPrint && !paid()) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      paywall('La stampa');
+    }
+  }, true);
+
+  // Le freccine "Cambia" restano visibili anche nella versione gratuita.
+  // In modalità gratuita il click viene intercettato dal controllo premium sopra.
+  // In modalità completa restano attivi i gestori originali.
+  const observer = new MutationObserver(refreshMode);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
 })();
 </script>
 
