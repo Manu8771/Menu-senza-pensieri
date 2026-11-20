@@ -388,16 +388,110 @@ $("saveMenu").onclick=()=>{save();$("genmsg").textContent="Menu salvato su quest
 $("filterType").addEventListener("change",renderRecipes);$("searchRecipe").addEventListener("input",renderRecipes);$("recipeServings").addEventListener("change",renderRecipes);
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if((b.dataset.tab==="spesa"||b.dataset.tab==="ricette")&&needLic())return;document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===b);x.classList.toggle("secondary",x!==b)});document.querySelectorAll(".view").forEach(x=>x.classList.toggle("hidden",x.id!==b.dataset.tab));if(b.dataset.tab==="spesa")renderShopping();});
 
-const SALT="6afc1d659dff87d51a10351b";
-function h53(str,seed){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0);}
-function licCode(name){const n=String(name).toLowerCase().replace(/[^a-z0-9]/g,""),A="23456789ABCDEFGHJKMNPQRSTUVWXYZ";let out="";[h53(SALT+n,1),h53(n+SALT,2)].forEach(v=>{for(let i=0;i<6;i++){out+=A[v%31];v=Math.floor(v/31);}});return"MSP-"+out.slice(0,4)+"-"+out.slice(4,8)+"-"+out.slice(8,12);}
-function getLic(){try{const l=JSON.parse(localStorage.getItem("ptLicV1")||"null");if(l&&l.name&&String(l.name).replace(/[^a-zA-Z0-9]/g,"").length>=3&&licCode(l.name)===l.code)return l;}catch(e){}return null;}
-function needLic(){if(getLic())return false;$("licMsg").textContent="";$("licDialog").showModal();return true;}
-function updateLic(){const l=getLic();$("licBtn").textContent=l?"Licenza attiva: "+l.name:"Versione dimostrativa · Attiva licenza";$("licPrint").textContent=l?"Licenza personale di "+l.name:"Versione dimostrativa – Menù senza pensieri";}
-$("licBtn").onclick=()=>{if(!getLic())needLic();else alert("Licenza personale attiva per: "+getLic().name+". Non è consentito condividere il file o il codice.");};
+const LIC_URL="https://script.google.com/macros/s/AKfycbzTuDN_Ozqn5VtJ4xMeKXMuaTHlePGijKkz-3NV2EC1hdP_S0jmeOcXopUXGdRoO1QS9Q/exec";
+
+function getDeviceId(){
+  let id=localStorage.getItem("ptDeviceV1");
+  if(!id){
+    id=crypto.randomUUID
+      ? crypto.randomUUID()
+      : "dev-"+Date.now()+"-"+Math.random().toString(36).slice(2);
+    localStorage.setItem("ptDeviceV1",id);
+  }
+  return id;
+}
+
+function getLic(){
+  try{
+    const l=JSON.parse(localStorage.getItem("ptLicV1")||"null");
+    return l&&l.name&&l.code&&l.verified===true?l:null;
+  }catch(e){return null;}
+}
+
+function needLic(){
+  if(getLic())return false;
+  $("licMsg").textContent="";
+  $("licDialog").showModal();
+  return true;
+}
+
+function updateLic(){
+  const l=getLic();
+  $("licBtn").textContent=l
+    ?"Licenza attiva: "+l.name
+    :"Versione dimostrativa · Attiva licenza";
+  $("licPrint").textContent=l
+    ?"Licenza personale di "+l.name
+    :"Versione dimostrativa – Menù senza pensieri";
+}
+
+$("licBtn").onclick=()=>{
+  if(!getLic())needLic();
+  else alert("Licenza personale attiva per: "+getLic().name+
+    ". Non è consentito condividere il file o il codice.");
+};
+
 $("licClose").onclick=()=>$("licDialog").close();
-$("licOk").onclick=()=>{const name=$("licName").value.trim(),code=$("licCode").value.toUpperCase().replace(/[^A-Z0-9]/g,"");if(name&&code===licCode(name).replace(/[^A-Z0-9]/g,"")){try{localStorage.setItem("ptLicV1",JSON.stringify({name:name,code:licCode(name)}));}catch(e){}$("licDialog").close();updateLic();renderAll();}else $("licMsg").textContent="Nome o codice non corretti. Controlla di aver scritto il nome esattamente come comunicato all'acquisto.";};
-function getHist(){try{const h=JSON.parse(localStorage.getItem("ptHistV1")||"[]");return Array.isArray(h)?h:[];}catch(e){return[];}}
+
+$("licOk").onclick=async()=>{
+  const name=$("licName").value.trim();
+  const code=$("licCode").value.toUpperCase().replace(/[^A-Z0-9]/g,"");
+
+  if(!name||name.replace(/[^a-zA-Z0-9]/g,"").length<3||code.length<8){
+    $("licMsg").textContent="Inserisci nome, cognome e un codice valido.";
+    return;
+  }
+
+  const btn=$("licOk");
+  btn.disabled=true;
+  btn.textContent="Verifica...";
+  $("licMsg").textContent="Verifica del codice in corso…";
+
+  try{
+    const url=LIC_URL+"?"+new URLSearchParams({
+      name:name,
+      code:code,
+      dev:getDeviceId()
+    }).toString();
+
+    const response=await fetch(url,{
+      method:"GET",
+      mode:"cors",
+      cache:"no-store",
+      redirect:"follow"
+    });
+
+    if(!response.ok)throw new Error("HTTP "+response.status);
+
+    const result=await response.json();
+
+    if(result.ok){
+      localStorage.setItem("ptLicV1",JSON.stringify({
+        name:name,
+        code:code,
+        verified:true
+      }));
+      $("licDialog").close();
+      updateLic();
+      renderAll();
+    }else{
+      const messages={
+        nome:"Il nome non corrisponde a quello associato al codice.",
+        usato:"Questo codice è già stato utilizzato su un altro dispositivo.",
+        codice:"Codice non valido.",
+        dati:"Controlla nome, cognome e codice."
+      };
+      $("licMsg").textContent=
+        messages[result.reason]||"Codice non valido o non disponibile.";
+    }
+  }catch(e){
+    $("licMsg").textContent=
+      "Non riesco a raggiungere Google per verificare il codice. Riprova tra poco.";
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Attiva";
+  }
+};function getHist(){try{const h=JSON.parse(localStorage.getItem("ptHistV1")||"[]");return Array.isArray(h)?h:[];}catch(e){return[];}}
 function pushHist(menu){try{const h=getHist();h.push(menu.filter(x=>x&&x!=="free"));localStorage.setItem("ptHistV1",JSON.stringify(h.slice(-2)));}catch(e){}}
 function swapMeal(slot){const cur=state.recipes.find(r=>r.id===state.menu[slot]),type=cur?cur.type:(slot%2===0?"Primo":"Secondo"),recent=new Set(getHist().flat());let c=state.recipes.filter(r=>!r.optional&&r.type===type&&r.id!==state.menu[slot]&&!state.menu.includes(r.id));const fresh=c.filter(r=>!recent.has(r.id));if(fresh.length)c=fresh;if(!c.length){$("genmsg").textContent="Non ci sono altre ricette disponibili di questa categoria: aggiungine di nuove o scegli a mano.";return;}state.menu[slot]=c[Math.floor(Math.random()*c.length)].id;save();renderWeek();renderShopping();}
 $("expBk").onclick=()=>{if(needLic())return;const b=new Blob([JSON.stringify({app:"pronto-in-tavola",recipes:state.recipes,menu:state.menu,people:state.people})],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="menu-senza-pensieri-backup.json";a.click();};
