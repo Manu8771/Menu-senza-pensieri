@@ -237,7 +237,7 @@ body>header{display:none!important}body>main{max-width:920px!important;padding:0
 <div><label for="people">Numero di persone</label><select id="people"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div><div><label for="methodPref">Come vuoi cucinare?</label><select id="methodPref"><option value="">Bimby e tradizionale</option><option value="B">Solo Bimby</option><option value="T">Solo tradizionale</option></select></div><div><label for="sidesPref">Includi i contorni</label><select id="sidesPref"><option value="0">No</option><option value="1">Sì</option></select></div>
 
 </div>
-<div class="actions no-print"><button id="generate">🎲 Genera menu</button><button class="secondary" id="saveMenu">Salva settimana</button><button class="secondary" id="clearMenu">Svuota settimana</button><button class="secondary" onclick="if(!needLic())window.print()">🖨️ Stampa menu</button></div>
+<div class="actions no-print"><button id="generate">🎲 Genera menu</button><button class="secondary" id="saveMenu">Salva settimana</button><button class="secondary" id="clearMenu">Svuota settimana</button><button class="secondary" onclick="window.print()">🖨️ Stampa menu</button></div>
 <p class="muted" id="genmsg"></p>
 </div>
 <div id="week" class="weekgrid"></div>
@@ -900,7 +900,7 @@ function renderWeek(){
    sel.addEventListener("change",e=>{const value=e.target.value;state.menu[slot]=value;save();renderWeek();renderShopping();});
  });
 }
-function showDayRecipes(dayIndex){if(needLic())return;
+function showDayRecipes(dayIndex){
  const dialog=$("dayRecipesDialog"), title=days[dayIndex];
  $("dayRecipesTitle").textContent="Ricette di "+title;
  const slots=[["Pranzo · primo",dayIndex*4],["Pranzo · secondo",dayIndex*4+1],["Cena · primo",dayIndex*4+2],["Cena · secondo",dayIndex*4+3]];if($("sidesPref").value==="1")slots.push(["Pranzo · contorno",28+dayIndex*2],["Cena · contorno",29+dayIndex*2]);
@@ -1075,8 +1075,10 @@ $("clearMenu").onclick=()=>{state.menu=Array(42).fill("");state.shoppingChecked=
 $("resetShopping").onclick=()=>{state.shoppingChecked={};save();renderShopping();};
 $("saveMenu").onclick=()=>{save();$("genmsg").textContent="Menu salvato su questo dispositivo."};$("people").onchange=e=>{state.people=+e.target.value;save();renderShopping()};
 $("filterType").addEventListener("change",renderRecipes);$("filterMethod").addEventListener("change",renderRecipes);$("searchRecipe").addEventListener("input",renderRecipes);$("recipeServings").addEventListener("change",renderRecipes);
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if((b.dataset.tab==="spesa"||b.dataset.tab==="ricette")&&needLic())return;document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===b);x.classList.toggle("secondary",x!==b)});document.querySelectorAll(".view").forEach(x=>x.classList.toggle("hidden",x.id!==b.dataset.tab));if(b.dataset.tab==="spesa")renderShopping();});
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{if(b.dataset.tab==="ricette"&&needLic())return;document.querySelectorAll(".tab").forEach(x=>{x.classList.toggle("active",x===b);x.classList.toggle("secondary",x!==b)});document.querySelectorAll(".view").forEach(x=>x.classList.toggle("hidden",x.id!==b.dataset.tab));if(b.dataset.tab==="spesa")renderShopping();});
 
+// Piano gratuito: genera/salva/apre la settimana, cambia piatti e consulta ricette del giorno.
+// Archivio e scelta manuale dal catalogo restano riservati alla licenza; stampa lista spesa protetta.
 const LIC_API_URL="https://script.google.com/macros/s/AKfycbzTuDN_Ozqn5VtJ4xMeKXMuaTHlePGijKkz-3NV2EC1hdP_S0jmeOcXopUXGdRoO1QS9Q/exec";
 function getDeviceId(){
   try{
@@ -1173,7 +1175,7 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
  peopleWrap.querySelector('label').style.display='none';methodWrap.querySelector('label').style.display='none';sidesWrap.querySelector('label').style.display='none';
  const actions=menuPanel.querySelector('.actions');
  $('#mspSave').onclick=()=>$('#saveMenu').click();$('#mspClear').onclick=()=>{if(confirm('Vuoi svuotare tutta la settimana?'))$('#clearMenu').click();};
- $('#mspPrint').onclick=()=>{if(!needLic())window.print();};$('#mspShopping').onclick=()=>{if(needLic())return;show('mspDay');document.querySelectorAll('.msp-screen').forEach(s=>s.classList.remove('active'));$('#spesa').classList.remove('hidden');$('#spesa').scrollIntoView({behavior:'smooth'});};
+ $('#mspPrint').onclick=()=>window.print();$('#mspShopping').onclick=()=>{show('mspDay');document.querySelectorAll('.msp-screen').forEach(s=>s.classList.remove('active'));$('#spesa').classList.remove('hidden');$('#spesa').scrollIntoView({behavior:'smooth'});};
  // Move original weekly renderer output into the illustrated day screen.
  $('#mspWeekMount').appendChild($('#week'));$('#mspGenMount').appendChild($('#genmsg'));
  // Il pulsante licenza è già presente nella home: non va spostato dal DOM.
@@ -1191,12 +1193,12 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
  people.addEventListener('change',syncConfig);method.addEventListener('change',syncConfig);sides.addEventListener('change',syncConfig);syncConfig();
  $('mspStart').onclick=()=>{syncConfig();show('mspConfig');};$('mspConfigBack').onclick=()=>show('mspHome');$('mspConfigBack2').onclick=()=>{syncConfig();show('mspConfig');};$('mspHomeBack').onclick=()=>{syncWeekButton();show('mspHome');};
  function syncWeekButton(){const hasWeek=Array.isArray(state.menu)&&state.menu.some(Boolean);$('mspViewWeek').style.display=hasWeek?'block':'none';}
- $('mspViewWeek').onclick=()=>{if(needLic())return;if(!state.menu.some(Boolean)){alert('Non hai ancora un menù generato. Premi «Genera menù» per crearne uno.');return;}activeDay=0;renderWeek();show('mspDay');};
- $('mspGenerate').onclick=()=>{if(needLic())return;const before=JSON.stringify(state.menu);$('generate').click();const msg=$('genmsg').textContent||'';if(msg.startsWith('Menu creato')){activeDay=0;renderWeek();show('mspDay');}else if(JSON.stringify(state.menu)!==before&&state.menu.some(Boolean)){activeDay=0;renderWeek();show('mspDay');}syncWeekButton();};
+ $('mspViewWeek').onclick=()=>{if(!state.menu.some(Boolean)){alert('Non hai ancora un menù generato. Premi «Genera menù» per crearne uno.');return;}activeDay=0;renderWeek();show('mspDay');};
+ $('mspGenerate').onclick=()=>{const before=JSON.stringify(state.menu);$('generate').click();const msg=$('genmsg').textContent||'';if(msg.startsWith('Menu creato')){activeDay=0;renderWeek();show('mspDay');}else if(JSON.stringify(state.menu)!==before&&state.menu.some(Boolean)){activeDay=0;renderWeek();show('mspDay');}syncWeekButton();};
  $('mspArchive').onclick=()=>{if(needLic())return;document.querySelectorAll('.msp-screen').forEach(s=>s.classList.remove('active'));$('#ricette').classList.remove('hidden');$('#ricette').scrollIntoView({behavior:'smooth'});};
  document.querySelectorAll('.mspReturnHome').forEach(b=>b.onclick=()=>{recipeSection.classList.add('hidden');shoppingSection.classList.add('hidden');syncWeekButton();show('mspHome');});document.querySelectorAll('.mspReturnMenu').forEach(b=>b.onclick=()=>{recipeSection.classList.add('hidden');shoppingSection.classList.add('hidden');show('mspDay');});
  $('mspPrev').onclick=()=>{activeDay=(activeDay+6)%7;renderWeek();};$('mspNext').onclick=()=>{activeDay=(activeDay+1)%7;renderWeek();};
- $('mspOpenRecipes').onclick=()=>{if(!needLic())showDayRecipes(activeDay);};
+ $('mspOpenRecipes').onclick=()=>showDayRecipes(activeDay);
  // Replace only the weekly presentation. Original menu data, selects, swap logic and storage remain intact.
  // La visualizzazione dei pasti è gestita da un solo renderer, definito in fondo al file.
 
@@ -1204,7 +1206,7 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
 </script>
 <script>if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
 
-<style>#mspGenMount #genmsg:empty{display:none!important;}</style>
+<style>#mspGenMount #genmsg:empty{display:none!important;}.msp-free-dish{font-weight:700;color:#4b2a18;line-height:1.25;padding:9px 10px;min-height:38px;display:flex;align-items:center;overflow-wrap:anywhere}.msp-free-dish .method-star{margin-right:4px}</style>
 <script id="msp-week-renderer-final">
 (()=>{
   const el=id=>document.getElementById(id);
@@ -1218,8 +1220,14 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
     const week=el('week'),name=el('mspDayName');
     if(!week||!name||typeof state==='undefined'||!Array.isArray(state.menu))return;
     const includeSides=el('sidesPref')?.value==='1';
+    const licensed=typeof getLic==='function'&&!!getLic();
     const makeMeal=(title,firstSlot,sideSlot,art,kind)=>{
-      const row=(label,slot,type)=>`<div class="msp-course-row"><b>${label}</b><div><select data-slot="${slot}">${mealOptions(state.menu[slot]||'',type)}</select><button type="button" class="secondary swap" data-slot="${slot}">↻ Cambia</button></div></div>`;
+      const row=(label,slot,type)=>{
+        const current=state.recipes.find(r=>r.id===state.menu[slot]);
+        const display=current?`${methodBadgeHTML(current,true)} ${esc(current.name)}`:(state.menu[slot]==='free'?'Pasto libero':'Nessun piatto selezionato');
+        const chooser=licensed?`<select data-slot="${slot}">${mealOptions(state.menu[slot]||'',type)}</select>`:`<div class="msp-free-dish">${display}</div>`;
+        return `<div class="msp-course-row"><b>${label}</b><div>${chooser}<button type="button" class="secondary swap" data-slot="${slot}">↻ Cambia</button></div></div>`;
+      };
       return `<section class="msp-meal-card ${kind}"><div class="msp-meal-title">${title}</div><div class="msp-meal-content"><div class="msp-courses">${row('Primo',firstSlot,'Primo')}${row('Secondo',firstSlot+1,'Secondo')}${includeSides?row('Contorno',sideSlot,'Contorno'):''}</div></div></section>`;
     };
     const lunchFirst=activeDay*4;
@@ -1255,18 +1263,18 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
   const bind=(id,fn)=>{const node=el(id);if(node)node.onclick=e=>{e.preventDefault();e.stopPropagation();fn();};};
   bind('mspPrev',()=>window.mspSetActiveDay(activeDay+6));
   bind('mspNext',()=>window.mspSetActiveDay(activeDay+1));
-  bind('mspViewWeek',()=>{if(typeof needLic==='function'&&needLic())return;if(!hasSavedWeek()){alert('Non hai ancora un menù salvato. Premi “Genera menù” per crearne uno.');return;}window.mspSetActiveDay(0);showScreen('mspDay');});
-  bind('mspGenerate',()=>{if(typeof needLic==='function'&&needLic())return;const gen=el('generate');if(gen)gen.click();if(Array.isArray(state.menu)&&state.menu.some(Boolean)){if(typeof save==='function')save();window.mspSetActiveDay(0);showScreen('mspDay');}});
-  bind('mspSave',()=>{if(typeof needLic==='function'&&needLic())return;if(typeof save==='function')save();alert('Menù settimanale salvato.');});
-  bind('mspClear',()=>{if(typeof needLic==='function'&&needLic())return;if(!confirm('Vuoi svuotare tutta la settimana?'))return;state.menu=Array(42).fill('');if(typeof save==='function')save();render();if(typeof renderShopping==='function')renderShopping();});
-  bind('mspPrint',()=>{if(typeof needLic==='function'&&needLic())return;window.print();});
-  bind('mspShopping',()=>{if(typeof needLic==='function'&&needLic())return;document.querySelectorAll('.msp-screen').forEach(x=>x.classList.remove('active'));el('spesa')?.classList.remove('hidden');el('spesa')?.scrollIntoView({behavior:'smooth'});if(typeof renderShopping==='function')renderShopping();});
+  bind('mspViewWeek',()=>{if(!hasSavedWeek()){alert('Non hai ancora un menù salvato. Premi “Genera menù” per crearne uno.');return;}window.mspSetActiveDay(0);showScreen('mspDay');});
+  bind('mspGenerate',()=>{const gen=el('generate');if(gen)gen.click();if(Array.isArray(state.menu)&&state.menu.some(Boolean)){if(typeof save==='function')save();window.mspSetActiveDay(0);showScreen('mspDay');}});
+  bind('mspSave',()=>{if(typeof save==='function')save();alert('Menù settimanale salvato.');});
+  bind('mspClear',()=>{if(!confirm('Vuoi svuotare tutta la settimana?'))return;state.menu=Array(42).fill('');if(typeof save==='function')save();render();if(typeof renderShopping==='function')renderShopping();});
+  bind('mspPrint',()=>{window.print();});
+  bind('mspShopping',()=>{document.querySelectorAll('.msp-screen').forEach(x=>x.classList.remove('active'));el('spesa')?.classList.remove('hidden');el('spesa')?.scrollIntoView({behavior:'smooth'});if(typeof renderShopping==='function')renderShopping();});
   bind('mspArchive',()=>{if(typeof needLic==='function'&&needLic())return;document.querySelectorAll('.msp-screen').forEach(x=>x.classList.remove('active'));el('ricette')?.classList.remove('hidden');el('ricette')?.scrollIntoView({behavior:'smooth'});});
   bind('mspHomeBack',()=>showScreen('mspHome'));
   bind('mspConfigBack',()=>showScreen('mspHome'));
   bind('mspConfigBack2',()=>showScreen('mspConfig'));
-  bind('mspStart',()=>{if(typeof needLic==='function'&&needLic())return;showScreen('mspConfig');});
-  bind('mspOpenRecipes',()=>{if(typeof needLic==='function'&&needLic()&&typeof showDayRecipes==='function')return;if(typeof showDayRecipes==='function')showDayRecipes(activeDay);});
+  bind('mspStart',()=>{showScreen('mspConfig');});
+  bind('mspOpenRecipes',()=>{if(typeof showDayRecipes==='function')showDayRecipes(activeDay);});
   // Move the original menu controls/data container into the visible illustrated day screen.
   const mount=el('mspWeekMount');if(mount&&weekRoot&&weekRoot.parentElement!==mount)mount.appendChild(weekRoot);
   const genmsg=el('genmsg'),genmount=el('mspGenMount');if(genmsg&&genmount&&genmsg.parentElement!==genmount)genmount.appendChild(genmsg);
