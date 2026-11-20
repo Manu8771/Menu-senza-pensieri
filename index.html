@@ -118,6 +118,7 @@ body>header{display:none!important}body>main{max-width:920px!important;padding:0
 #genmsg{background:#fff4dc;border:1px solid #e8c28d;border-radius:12px;padding:8px;margin:8px 0;color:#68401f;font-size:13px}
 #ricette,#spesa{margin-top:12px}#ricette .panel,#spesa .panel{border-radius:22px;background:#fff8ec;border:1px solid #e5c49b}
 .msp-subnav{display:flex;gap:8px;margin:10px 0}.msp-subnav button{flex:1;background:#fff9ef!important;color:#633415!important;border:1px solid #d9b78e!important;box-shadow:none!important;border-radius:14px!important;padding:10px!important;font-size:13px!important}
+.msp-view-week{display:block;width:100%;min-height:58px;margin:10px 0;background:linear-gradient(180deg,#fff4dc,#f0d6a8);color:#653817;border:2px solid #b98448;border-radius:28px;font-weight:900;font-size:clamp(16px,4vw,21px);box-shadow:0 5px 0 #c7a77d,0 8px 16px #4d2b1828;padding:12px 16px;cursor:pointer}.msp-view-week:active,.msp-primary:active,.msp-orange:active,.msp-action:active{transform:translateY(2px);filter:brightness(.96)}.msp-screen button{touch-action:manipulation;pointer-events:auto}.msp-day-card .msp-course-row select{min-width:0}.msp-day-card .msp-course-row button{cursor:pointer}
 @media(min-width:700px){.msp-shell{max-width:580px}.msp-home{min-height:850px}.msp-meal-content{grid-template-columns:110px 1fr}.msp-meal-art{width:110px;height:130px}}
 @media(max-width:390px){.msp-shell{padding:6px 0 20px}.msp-home{border-width:5px;border-radius:27px;padding:10px}.msp-brand img{width:120px;height:92px}.msp-home .msp-brand{padding:8px}.msp-home-art{height:190px}.msp-primary,.msp-orange{font-size:18px!important;min-height:58px}.msp-action{font-size:11px!important;min-height:69px}.msp-meal-content{grid-template-columns:76px 1fr}.msp-meal-art{width:76px;height:100px}.msp-course-row{grid-template-columns:69px 1fr}.msp-course-row b{font-size:12px}.msp-daynav strong{font-size:25px}}
 @media print{.msp-shell{display:block!important;max-width:none!important;padding:0!important}.msp-screen{display:none!important}.msp-screen#mspDay{display:block!important}.msp-day-card{display:block!important;break-inside:avoid}.msp-top-actions,.msp-daynav,.msp-day-open,.msp-subnav,.msp-bottom-art{display:none!important}body>main{display:block!important}#menu{display:none!important}.tabs,header{display:none!important}}
@@ -127,7 +128,7 @@ body>header{display:none!important}body>main{max-width:920px!important;padding:0
 <div class="msp-shell" id="mspShell">
 <section class="msp-screen active" id="mspHome"><div class="msp-home">
  <div><div class="msp-brand"><img id="mspLogo" alt="Menù senza pensieri"><h1>Menù <span>senza</span><br>pensieri</h1></div><div class="msp-home-art" aria-hidden="true"></div></div>
- <div class="msp-home-actions"><button class="msp-primary" id="mspStart"><span class="msp-icon">♧</span> Genera menù　›</button><button class="msp-orange" id="mspArchive"><span class="msp-icon">▤</span> Archivio ricette　›</button><div id="mspLicHolder"></div></div>
+ <div class="msp-home-actions"><button class="msp-primary" id="mspStart"><span class="msp-icon">♧</span> Genera menù　›</button><button class="msp-view-week" id="mspViewWeek" type="button" style="display:none">📅 Vedi menù della settimana　›</button><button class="msp-orange" id="mspArchive"><span class="msp-icon">▤</span> Archivio ricette　›</button><div id="mspLicHolder"></div></div>
 </div></section>
 <section class="msp-screen" id="mspConfig"><div class="msp-brand"><img id="mspLogo2" alt=""><h1>Menù <span>senza</span> pensieri</h1></div><div class="msp-wood">Menù della settimana</div>
  <div class="msp-screen-card">
@@ -1108,10 +1109,12 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
  document.querySelectorAll('.msp-method').forEach(b=>b.onclick=()=>{method.value=b.dataset.method;method.dispatchEvent(new Event('change'));syncConfig();});
  $('mspSides').onchange=e=>{sides.value=e.target.checked?'1':'0';sides.dispatchEvent(new Event('change'));};
  people.addEventListener('change',syncConfig);method.addEventListener('change',syncConfig);sides.addEventListener('change',syncConfig);syncConfig();
- $('mspStart').onclick=()=>{syncConfig();show('mspConfig');};$('mspConfigBack').onclick=()=>show('mspHome');$('mspConfigBack2').onclick=()=>{syncConfig();show('mspConfig');};$('mspHomeBack').onclick=()=>show('mspHome');
- $('mspGenerate').onclick=()=>{if(needLic())return;$('#generate').click();activeDay=0;show('mspDay');renderWeek();};
+ $('mspStart').onclick=()=>{syncConfig();show('mspConfig');};$('mspConfigBack').onclick=()=>show('mspHome');$('mspConfigBack2').onclick=()=>{syncConfig();show('mspConfig');};$('mspHomeBack').onclick=()=>{syncWeekButton();show('mspHome');};
+ function syncWeekButton(){const hasWeek=Array.isArray(state.menu)&&state.menu.some(Boolean);$('mspViewWeek').style.display=hasWeek?'block':'none';}
+ $('mspViewWeek').onclick=()=>{if(needLic())return;if(!state.menu.some(Boolean)){alert('Non hai ancora un menù generato. Premi «Genera menù» per crearne uno.');return;}activeDay=0;renderWeek();show('mspDay');};
+ $('mspGenerate').onclick=()=>{if(needLic())return;const before=JSON.stringify(state.menu);$('generate').click();const msg=$('genmsg').textContent||'';if(msg.startsWith('Menu creato')){activeDay=0;renderWeek();show('mspDay');}else if(JSON.stringify(state.menu)!==before&&state.menu.some(Boolean)){activeDay=0;renderWeek();show('mspDay');}syncWeekButton();};
  $('mspArchive').onclick=()=>{if(needLic())return;document.querySelectorAll('.msp-screen').forEach(s=>s.classList.remove('active'));$('#ricette').classList.remove('hidden');$('#ricette').scrollIntoView({behavior:'smooth'});};
- document.querySelectorAll('.mspReturnHome').forEach(b=>b.onclick=()=>{recipeSection.classList.add('hidden');shoppingSection.classList.add('hidden');show('mspHome');});document.querySelectorAll('.mspReturnMenu').forEach(b=>b.onclick=()=>{recipeSection.classList.add('hidden');shoppingSection.classList.add('hidden');show('mspDay');});
+ document.querySelectorAll('.mspReturnHome').forEach(b=>b.onclick=()=>{recipeSection.classList.add('hidden');shoppingSection.classList.add('hidden');syncWeekButton();show('mspHome');});document.querySelectorAll('.mspReturnMenu').forEach(b=>b.onclick=()=>{recipeSection.classList.add('hidden');shoppingSection.classList.add('hidden');show('mspDay');});
  $('mspPrev').onclick=()=>{activeDay=(activeDay+6)%7;renderWeek();};$('mspNext').onclick=()=>{activeDay=(activeDay+1)%7;renderWeek();};
  $('mspOpenRecipes').onclick=()=>{if(!needLic())showDayRecipes(activeDay);};
  // Replace only the weekly presentation. Original menu data, selects, swap logic and storage remain intact.
@@ -1129,7 +1132,7 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
    $('#week').querySelectorAll('.swap').forEach(b=>b.addEventListener('click',()=>swapMeal(+b.dataset.slot)));
  };
  // The original script has already rendered once; redraw with the new layout.
- renderWeek();
+ renderWeek();syncWeekButton();
 })();
 </script>
 <script>if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
