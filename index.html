@@ -212,7 +212,8 @@ body>header{display:none!important}body>main{max-width:920px!important;padding:0
   <div class="msp-field"><label>♟ Numero di persone</label><div class="msp-people"><button id="mspMinus" type="button">−</button><strong id="mspPeople">2</strong><button id="mspPlus" type="button">+</button></div></div>
   <div class="msp-field"><label>♨ Come vuoi cucinare?</label><div class="msp-methods"><button class="msp-method" data-method="B"><span>♨</span>Bimby</button><button class="msp-method" data-method="T"><span>♜</span>Tradizionale</button><button class="msp-method" data-method=""><span>♨♜</span>Entrambi</button></div></div>
   <div class="msp-field"><div class="msp-toggle-row"><label style="margin:0">🌿 Includere i contorni?</label><input class="msp-toggle" id="mspSides" type="checkbox"></div></div>
-  <div class="msp-config-art" aria-label="Illustrazione con pulsante Genera menù"><button class="msp-config-generate-hit" id="mspGenerate" type="button" aria-label="Genera menù">Genera menù</button></div>
+  <div class="msp-field"><label>🚫 Cosa non vuoi mangiare?</label><div class="msp-chips" id="mspExclChips"><button type="button" class="msp-chip" data-ex="pesce">Pesce</button><button type="button" class="msp-chip" data-ex="carne">Carne</button><button type="button" class="msp-chip" data-ex="maiale">Maiale e salumi</button><button type="button" class="msp-chip" data-ex="funghi">Funghi</button><button type="button" class="msp-chip" data-ex="uova">Uova</button><button type="button" class="msp-chip" data-ex="latticini">Latticini</button></div><input id="mspExclCustom" class="msp-excl-input" placeholder="Altri da evitare (es. melanzane, peperoni)" autocomplete="off"><div id="mspExclInfo" class="msp-excl-info"></div></div>
+  <button class="msp-gen-btn" id="mspGenerate" type="button"><span class="ico">🍳</span><span class="txt">Genera menù</span><span class="arr">›</span></button><div class="msp-config-art" aria-hidden="true"></div>
  </div><button class="msp-back" id="mspConfigBack">‹ Indietro</button>
 </section>
 <section class="msp-screen" id="mspDay"><div class="msp-top-actions"><button class="msp-action save" id="mspSave"><span>▣</span>Salva<br>settimana</button><button class="msp-action clear" id="mspClear"><span>▤</span>Svuota<br>settimana</button><button class="msp-action print" id="mspPrint"><span>▣</span>Stampa<br>menù</button><button class="msp-action shop" id="mspShopping"><span>🛒</span>Lista<br>della spesa</button></div>
@@ -1062,14 +1063,14 @@ function editRecipe(id){if(needLic())return;let r=state.recipes.find(x=>x.id===i
 $("addRecipe").onclick=()=>editRecipe("");$("closeDialog").onclick=()=>$("recipeDialog").close();
 $("recipeForm").onsubmit=e=>{e.preventDefault();let id=$("recipeId").value||"r"+Date.now(),rawIngredients=$("ring").value.trim(),r={id,name:$("rname").value.trim(),type:$("rtype").value,kcal:estimateCalories(rawIngredients.split("\n").map(x=>scaleIngredient(x,2,4)).join("\n")),ingredients:rawIngredients,steps:$("rsteps").value.trim(),optional:false,baseServings:4};let i=state.recipes.findIndex(x=>x.id===id);if(i>=0)state.recipes[i]=r;else state.recipes.push(r);$("recipeDialog").close();renderAll();};
 $("generate").onclick=()=>{if(state.menu.some(Boolean)&&!confirm("Il menu è già stato generato. Vuoi crearne un altro? Il menu attuale verrà sostituito."))return;
-const pool=state.recipes.filter(r=>!r.optional&&matchMethod(r)),primi=pool.filter(r=>r.type==="Primo"),secondi=pool.filter(r=>r.type==="Secondo");
+const pool=state.recipes.filter(r=>!r.optional&&matchMethod(r)&&!isExcluded(r)),primi=pool.filter(r=>r.type==="Primo"),secondi=pool.filter(r=>r.type==="Secondo");
 if(primi.length<2||secondi.length<2){$("genmsg").textContent="Non ci sono abbastanza ricette per questa scelta. Aggiungine altre oppure cambia «Come vuoi cucinare?».";return;}
 const recent=new Set(getHist().flat()),shuf=a=>a.slice().sort(()=>Math.random()-.5);let repeats=false;
 const build=list=>{const fresh=list.filter(r=>!recent.has(r.id)),order=shuf(fresh).concat(shuf(list.filter(r=>recent.has(r.id))));if(order.length<14)repeats=true;const out=[];for(let k=0;k<14;k++)out.push(order[k%order.length]);
 for(let d=0;d<7;d++){if(out[2*d].id!==out[2*d+1].id)continue;for(let k=0;k<14;k++){const dk=k>>1,pk=k^1;if(dk!==d&&out[k].id!==out[2*d].id&&out[pk].id!==out[2*d+1].id){const t=out[2*d+1];out[2*d+1]=out[k];out[k]=t;break;}}}return out;};
 const P=build(primi),S=build(secondi),menu=[];
 for(let d=0;d<7;d++)menu.push(P[2*d].id,S[2*d].id,P[2*d+1].id,S[2*d+1].id);
-const sidesOn=$("sidesPref").value==="1",cont=state.recipes.filter(r=>r.type==="Contorno"&&!r.optional),cs=shuf(cont),sides=[];for(let k=0;k<14;k++)sides.push(sidesOn&&cs.length?cs[k%cs.length].id:"");state.menu=menu.concat(sides);pushHist(menu);state.shoppingChecked={};save();renderWeek();renderShopping();
+const sidesOn=$("sidesPref").value==="1",cont=state.recipes.filter(r=>r.type==="Contorno"&&!r.optional&&!isExcluded(r)),cs=shuf(cont),sides=[];for(let k=0;k<14;k++)sides.push(sidesOn&&cs.length?cs[k%cs.length].id:"");state.menu=menu.concat(sides);pushHist(menu);state.shoppingChecked={};save();renderWeek();renderShopping();
 $("genmsg").textContent=repeats?"Menu creato: primo e secondo sia a pranzo sia a cena. Per questa scelta le ricette sono poche, quindi qualcuna si ripete nella settimana.":"Menu creato: primo e secondo sia a pranzo sia a cena, senza ripetizioni nella settimana.";};
 $("clearMenu").onclick=()=>{state.menu=Array(42).fill("");state.shoppingChecked={};renderAll();};
 $("resetShopping").onclick=()=>{state.shoppingChecked={};save();renderShopping();};
@@ -1140,17 +1141,28 @@ $("licOk").onclick=async()=>{
 };
 function getHist(){try{const h=JSON.parse(localStorage.getItem("ptHistV1")||"[]");return Array.isArray(h)?h:[];}catch(e){return[];}}
 function pushHist(menu){try{const h=getHist();h.push(menu.filter(x=>x&&x!=="free"));localStorage.setItem("ptHistV1",JSON.stringify(h.slice(-2)));}catch(e){}}
-function swapMeal(slot){const cur=state.recipes.find(r=>r.id===state.menu[slot]),type=(slot>=28?"Contorno":(slot%2===0?"Primo":"Secondo")),recent=new Set(getHist().flat());let c=state.recipes.filter(r=>!r.optional&&(type==="Contorno"||matchMethod(r))&&r.type===type&&r.id!==state.menu[slot]&&!state.menu.includes(r.id));const fresh=c.filter(r=>!recent.has(r.id));if(fresh.length)c=fresh;if(!c.length){$("genmsg").textContent="Non ci sono altre ricette disponibili di questa categoria: aggiungine di nuove o scegli a mano.";return;}state.menu[slot]=c[Math.floor(Math.random()*c.length)].id;save();renderWeek();renderShopping();}
+function swapMeal(slot){const cur=state.recipes.find(r=>r.id===state.menu[slot]),type=(slot>=28?"Contorno":(slot%2===0?"Primo":"Secondo")),recent=new Set(getHist().flat());let c=state.recipes.filter(r=>!r.optional&&(type==="Contorno"||matchMethod(r))&&!isExcluded(r)&&r.type===type&&r.id!==state.menu[slot]&&!state.menu.includes(r.id));const fresh=c.filter(r=>!recent.has(r.id));if(fresh.length)c=fresh;if(!c.length){$("genmsg").textContent="Non ci sono altre ricette disponibili di questa categoria: aggiungine di nuove o scegli a mano.";return;}state.menu[slot]=c[Math.floor(Math.random()*c.length)].id;save();renderWeek();renderShopping();}
 $("expBk").onclick=()=>{if(needLic())return;const b=new Blob([JSON.stringify({app:"pronto-in-tavola",recipes:state.recipes,menu:state.menu,people:state.people})],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="menu-senza-pensieri-backup.json";a.click();};
 $("impBk").onclick=()=>{if(!needLic())$("bkFile").click();};
 $("bkFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.app!=="pronto-in-tavola"||!Array.isArray(d.recipes)||!d.recipes.every(r=>r&&typeof r.id==="string"&&typeof r.name==="string"&&typeof r.type==="string"&&typeof r.ingredients==="string"))throw 0;if(!confirm("Importare il backup? Ricette e menu attuali verranno sostituiti."))return;state.recipes=d.recipes;if(Array.isArray(d.menu)&&d.menu.length===42)state.menu=d.menu;if([1,2,3,4].includes(Number(d.people)))state.people=Number(d.people);renderAll();}catch(x){alert("File di backup non valido.");}};rd.readAsText(f);e.target.value="";};
 updateLic();
+
+const _EXC={pesce:/salmone|tonn|merluzzo|baccal|orata|branzino|pesce|gamber|calamar|seppi|vongol|cozze|acciug|frutti di mare|polpo|spada|trancio/,
+ maiale:/maiale|pancetta|guanciale|speck|prosciutto|salsiccia|lonza|arista|costine|salame|mortadella|bacon|wurstel|cotechino/,
+ carne:/maiale|pancetta|guanciale|speck|prosciutto|salsiccia|lonza|arista|costine|salame|mortadella|bacon|manzo|vitello|pollo|tacchino|agnello|carne|macinat|fusi|straccetti|bocconcini|saltimbocca|cotolett|costolett|spezzatino|brasato|roastbeef|polpett|polpettone|ragù/,
+ funghi:/fung|porcini|champignon/,
+ uova:/uov[ao]|frittata|tiramis/,
+ latticini:/latte|burro|panna|parmigiano|grana|pecorino|mozzarella|ricotta|formaggio|mascarpone|gorgonzola|fontina|taleggio|scamorza|provola|besciamella|yogurt/};
+function exclState(){try{const s=JSON.parse(localStorage.getItem("ptExclV1")||"{}");return{cats:Array.isArray(s.cats)?s.cats:[],custom:String(s.custom||"")};}catch(e){return{cats:[],custom:""};}}
+function isExcluded(r){const s=exclState();if(!s.cats.length&&!s.custom.trim())return false;const t=(r.name+" "+r.ingredients).toLowerCase();
+ if(s.cats.some(c=>_EXC[c]&&_EXC[c].test(t)))return true;
+ return s.custom.split(/[,;\n]/).map(x=>x.trim().toLowerCase()).filter(x=>x.length>=3).some(x=>{const k=x.length>=6?x.replace(/[aeio]$/,""):x;return t.includes(k);});}
 function matchMethod(r){const m=$("methodPref").value;return !m||methodForRecipe(r)===m;}
 try{const mp=localStorage.getItem("ptMethodV1");if(mp==="B"||mp==="T")$("methodPref").value=mp;}catch(e){}
 $("methodPref").onchange=e=>{try{localStorage.setItem("ptMethodV1",e.target.value);}catch(x){}$("genmsg").textContent=e.target.value?"Preferenza salvata: con «Genera menu» e «Cambia piatto» vedrai solo ricette "+(e.target.value==="B"?"con il Bimby.":"tradizionali."):"Preferenza salvata: ricette sia Bimby sia tradizionali.";};
 try{const sp=localStorage.getItem("ptSidesV1");if(sp==="1")$("sidesPref").value="1";}catch(e){}
 $("sidesPref").onchange=e=>{try{localStorage.setItem("ptSidesV1",e.target.value);}catch(x){}
-if(e.target.value==="1"){if(state.menu.slice(0,28).some(Boolean)){const cs=state.recipes.filter(r=>r.type==="Contorno"&&!r.optional).sort(()=>Math.random()-.5);for(let k=0;k<14;k++)if(!state.menu[28+k]&&cs.length)state.menu[28+k]=cs[k%cs.length].id;}$("genmsg").textContent="Contorni inclusi: ne trovi uno sotto ogni secondo.";}
+if(e.target.value==="1"){if(state.menu.slice(0,28).some(Boolean)){const cs=state.recipes.filter(r=>r.type==="Contorno"&&!r.optional&&!isExcluded(r)).sort(()=>Math.random()-.5);for(let k=0;k<14;k++)if(!state.menu[28+k]&&cs.length)state.menu[28+k]=cs[k%cs.length].id;}$("genmsg").textContent="Contorni inclusi: ne trovi uno sotto ogni secondo.";}
 else{for(let k=28;k<42;k++)state.menu[k]="";$("genmsg").textContent="Contorni esclusi dal menu.";}
 save();renderWeek();renderShopping();};
 load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
@@ -1395,4 +1407,71 @@ load();if(![1,2,3,4].includes(Number(state.people)))state.people=2;renderAll();
  sync();
 })();
 </script>
+<script id="msp-back-button">
+(()=>{
+ const rs=document.getElementById("ricette"),ss=document.getElementById("spesa");
+ const screens=()=>[...document.querySelectorAll(".msp-screen")],map={mspHome:"home",mspConfig:"config",mspDay:"giorno"};
+ const cur=()=>{if(rs&&!rs.classList.contains("hidden"))return"archivio";if(ss&&!ss.classList.contains("hidden"))return"spesa";const a=screens().find(s=>s.classList.contains("active"));return a?(map[a.id]||"home"):"home";};
+ let last=cur(),lock=false,byBack=false;
+ function go(v){lock=true;try{
+  const paid=typeof getLic==="function"&&getLic();
+  if((v==="archivio"||v==="spesa")&&!paid)v="home";
+  if(v==="giorno"&&!(state.menu||[]).slice(0,28).some(Boolean))v="home";
+  rs.classList.add("hidden");ss.classList.add("hidden");
+  if(v==="archivio"){screens().forEach(s=>s.classList.remove("active"));rs.classList.remove("hidden");}
+  else if(v==="spesa"){screens().forEach(s=>s.classList.remove("active"));ss.classList.remove("hidden");if(typeof renderShopping==="function")renderShopping();}
+  else{const id=v==="config"?"mspConfig":v==="giorno"?"mspDay":"mspHome";screens().forEach(s=>s.classList.toggle("active",s.id===id));if(v==="giorno"&&typeof window.renderWeek==="function")window.renderWeek();window.scrollTo(0,0);}
+  last=cur();
+ }finally{setTimeout(()=>{lock=false;},0);}}
+ const obs=new MutationObserver(()=>{if(lock)return;const v=cur();if(v!==last){last=v;history.pushState({v:v},"","#"+v);}});
+ screens().forEach(s=>obs.observe(s,{attributes:true,attributeFilter:["class"]}));[rs,ss].forEach(e=>e&&obs.observe(e,{attributes:true,attributeFilter:["class"]}));
+ history.replaceState({v:last},"","#"+last);
+ document.querySelectorAll("dialog").forEach(d=>new MutationObserver(()=>{
+  if(d.open&&!(history.state&&history.state.dlg))history.pushState({v:last,dlg:1},"","#"+last);
+  else if(!d.open&&history.state&&history.state.dlg&&!byBack&&![...document.querySelectorAll("dialog")].some(x=>x.open))history.back();
+ }).observe(d,{attributes:true,attributeFilter:["open"]}));
+ window.addEventListener("popstate",e=>{
+  const open=[...document.querySelectorAll("dialog")].filter(d=>d.open);
+  if(open.length){byBack=true;open.forEach(d=>d.close());setTimeout(()=>{byBack=false;},0);return;}
+  go((e.state&&e.state.v)||location.hash.slice(1)||"home");
+ });
+})();
+</script>
+<style id="msp-fix-scroll">
+body.msp-scroll>main{height:auto!important;min-height:100svh!important;overflow:visible!important}
+html body.msp-scroll #mspShell,html body.msp-scroll .msp-shell{display:none!important;height:0!important;min-height:0!important;overflow:hidden!important}
+html body.msp-scroll>main{margin-top:0!important}
+</style><script id="msp-fix-scroll-js">
+(()=>{const rs=document.getElementById("ricette"),ss=document.getElementById("spesa");
+ const upd=()=>{const on=!!((rs&&!rs.classList.contains("hidden"))||(ss&&!ss.classList.contains("hidden")));document.body.classList.toggle("msp-scroll",on);if(on)window.scrollTo(0,0);};
+ const o=new MutationObserver(upd);[rs,ss].forEach(e=>e&&o.observe(e,{attributes:true,attributeFilter:["class"]}));upd();})();
+</script>
+<style id="msp-excl-css">
+.msp-chips{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 8px}
+.msp-chip{border:1.5px solid #dfbd96;background:#fffaf1;border-radius:14px;padding:9px 12px;font-weight:800;color:#512b16;font-size:14px;min-height:0}
+.msp-chip.active{border-color:#b5271b;background:#fde8e4;color:#8c1d14;text-decoration:line-through}
+.msp-excl-input{width:100%;border:1.5px solid #dfbd96;background:#fffaf1;border-radius:14px;padding:11px 12px;font-size:15px;color:#512b16}
+.msp-excl-info{margin-top:7px;font-size:12.5px;line-height:1.35;color:#6b4a33}.msp-excl-info b{color:#285e0b}
+</style><script id="msp-excl-js">
+(()=>{const $=id=>document.getElementById(id);
+ function save(){const cats=[...document.querySelectorAll("#mspExclChips .msp-chip.active")].map(b=>b.dataset.ex);try{localStorage.setItem("ptExclV1",JSON.stringify({cats,custom:$("mspExclCustom").value}));}catch(e){}info();}
+ function info(){const rec=state.recipes.filter(r=>!r.optional),ok=rec.filter(r=>!isExcluded(r)),n=t=>ok.filter(r=>r.type===t).length,s=exclState();
+  const any=s.cats.length||s.custom.trim();
+  $("mspExclInfo").innerHTML=(any?"Ricette adatte: <b>"+ok.length+"</b> su "+rec.length+" (primi "+n("Primo")+", secondi "+n("Secondo")+", contorni "+n("Contorno")+"). Premi «Genera menù» per applicare.":"Nessuna esclusione: usiamo tutte le ricette.")+"<br>Serve a scegliere le ricette, non è una garanzia per le allergie: controlla sempre gli ingredienti.";}
+ const s=exclState();document.querySelectorAll("#mspExclChips .msp-chip").forEach(b=>{b.classList.toggle("active",s.cats.includes(b.dataset.ex));b.addEventListener("click",()=>{b.classList.toggle("active");save();});});
+ $("mspExclCustom").value=s.custom;$("mspExclCustom").addEventListener("input",save);info();
+})();
+</script>
+<style id="msp-gen-btn-css">
+.msp-gen-btn{position:relative;display:flex;align-items:center;justify-content:center;gap:12px;width:100%;height:68px;margin:16px 0 24px;border:2px solid #2c6a0c;border-radius:24px;cursor:pointer;
+ background:linear-gradient(180deg,#8be04a 0%,#55a81f 52%,#3f8a14 100%);color:#fff;font:800 26px/1 Georgia,serif;letter-spacing:.01em;text-shadow:0 2px 0 #2a5e0c,0 0 8px #0003;
+ box-shadow:0 7px 0 #2a6410,0 15px 20px #1e460a55,inset 0 2px 0 #ffffff88,inset 0 -4px 8px #0000002a;transition:transform .08s,box-shadow .08s;animation:mspGenPulse 3.2s ease-in-out infinite}
+.msp-gen-btn:before{content:"";position:absolute;left:14px;right:14px;top:5px;height:22px;border-radius:18px;background:linear-gradient(180deg,#ffffff66,#ffffff00);pointer-events:none}
+.msp-gen-btn .ico{font-size:30px;filter:drop-shadow(0 2px 0 #2a5e0c)}.msp-gen-btn .arr{font-size:36px;line-height:.8}
+.msp-gen-btn:active{transform:translateY(5px);box-shadow:0 2px 0 #2a6410,0 6px 10px #1e460a55,inset 0 2px 0 #ffffff66,inset 0 -3px 6px #00000030;animation:none}
+.msp-gen-btn:focus-visible{outline:4px solid #ffb703;outline-offset:3px}
+@keyframes mspGenPulse{0%,100%{box-shadow:0 7px 0 #2a6410,0 15px 20px #1e460a55,inset 0 2px 0 #ffffff88,inset 0 -4px 8px #0000002a}50%{box-shadow:0 7px 0 #2a6410,0 15px 26px #4fa01c99,inset 0 2px 0 #ffffff88,inset 0 -4px 8px #0000002a}}
+@media (prefers-reduced-motion:reduce){.msp-gen-btn{animation:none}}
+#mspConfig .msp-config-art{aspect-ratio:48/12!important;height:auto!important;background-size:100% auto!important;background-position:center top!important;margin:2px -2px -2px!important;border-radius:17px}
+</style>
 </body></html>
